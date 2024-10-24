@@ -1,0 +1,57 @@
+definitions:
+  steps:
+    - step: &scan-code
+        name: Vulnerability Scan
+        services:
+          - docker
+        script:
+          - pipe: aquasecurity/trivy-pipe:1.0.0
+            variables:
+              scanType: "fs"
+              hideProgress: "false"
+              format: "table"
+              exitCode: "1"
+              ignoreUnfixed: "true"
+              severity: "CRITICAL,HIGH"
+              
+    - step: &deploy-cloudrun
+        name: Deploy on Cloud Run
+        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:latest
+        script:
+          # - set -x
+          - apt -y install gettext
+          - export TAG=gcr.io/$PROJECT_ID/$FUNCTION_NAME:$BITBUCKET_BUILD_NUMBER
+          - envsubst < iac.yml > iac_processed.yml
+          - cat iac_processed.yml
+          - mv Dockerfile Dockerfile_template
+          - envsubst < Dockerfile_template > Dockerfile
+          # - sed -i "s/\$ES_API_KEY/$ES_API_KEY/g" ./Dockerfile
+          - cat Dockerfile
+          - echo $PROJECT_KEYFILE > gcloud-api-key.json
+          - gcloud auth activate-service-account --key-file gcloud-api-key.json
+          - gcloud config set project $PROJECT_ID
+          - gcloud builds submit --tag $TAG
+          - gcloud beta run services replace iac_processed.yml --platform=managed --region=$REGION
+          - gcloud run services set-iam-policy $FUNCTION_NAME policy.yml --region=$REGION
+
+pipelines:
+  tags:
+    'fao-maps-review-*':
+      - step: *scan-code
+      - step:
+          <<: *deploy-cloudrun
+          deployment: fao-maps-review
+          trigger: automatic
+  branches:
+    es_serverless_fao*:
+      - step: *scan-code
+      - step: 
+          <<: *deploy-cloudrun
+          deployment: fao-maps-dev
+          trigger: automatic
+    es_fao*:
+      - step: *scan-code
+      - step: 
+          <<: *deploy-cloudrun
+          deployment: fao-maps-dev
+          trigger: automatic

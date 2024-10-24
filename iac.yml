@@ -1,0 +1,77 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: $FUNCTION_NAME
+  labels:
+    cloud.googleapis.com/location: $REGION
+  annotations:
+    # run.googleapis.com/ingress: internal-and-cloud-load-balancing
+    # run.googleapis.com/ingress-status: internal-and-cloud-load-balancing
+    # run.googleapis.com/vpc-access-egress: private-ranges-only
+    # run.googleapis.com/vpc-access-connector: projects/fao-maps-review/locations/us-central1/connectors/fao-maps-vpc-connector
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+    run.googleapis.com/execution-environment: gen2
+    run.googleapis.com/sessionAffinity: 'true'
+    run.googleapis.com/minScale: '1'
+
+spec:
+  template:
+    metadata:
+      labels:
+        app: $FUNCTION_NAME
+        run.googleapis.com/startupProbeType: Default
+      annotations:
+        autoscaling.knative.dev/maxScale: '4'
+        autoscaling.knative.dev/minScale: '1'
+
+    spec:
+      serviceAccountName: $SERVICE_ACCOUNT_NAME
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+        - image: $TAG
+          env:
+            # - name: ES_API_KEY check ./Dockerfile
+            #   value: $_ES_API_KEY
+            - name: BACKEND
+              value: $BACKEND
+            - name: ES_VERIFY_CERTS
+              value: $ES_VERIFY_CERTS
+            - name: ES_USE_SSL
+              value: $ES_USE_SSL
+            - name: ES_PORT
+              value: $ES_PORT
+            - name: ES_HOST
+              value: $ES_HOST
+            - name: WEB_CONCURRENCY
+              value: $WEB_CONCURRENCY
+            - name: ENVIRONMENT
+              value: $ENVIRONMENT
+            - name: APP_PORT
+              value: $APP_PORT
+            - name: APP_HOST
+              value: $APP_HOST
+            - name: STAC_FASTAPI_VERSION
+              value: $STAC_FASTAPI_VERSION
+            - name: STAC_FASTAPI_DESCRIPTION
+              value: $STAC_FASTAPI_DESCRIPTION
+            - name: STAC_FASTAPI_TITLE
+              value: $STAC_FASTAPI_TITLE
+            - name: STAC_FASTAPI_ROOT_PATH
+              value: $STAC_FASTAPI_ROOT_PATH
+            - name: RELOAD
+              value: $RELOAD
+          ports:
+            #- name: h2c
+            - name: http1
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 4Gi
+
+
+  traffic:
+    - percent: 100
+      latestRevision: true

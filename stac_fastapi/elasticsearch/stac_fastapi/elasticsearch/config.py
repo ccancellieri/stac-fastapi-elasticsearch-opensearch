@@ -27,11 +27,12 @@ def _es_config() -> Dict[str, Any]:
     # Handle API key
     if api_key := os.getenv("ES_API_KEY"):
         if isinstance(config["headers"], dict):
-            headers = {**config["headers"], "x-api-key": api_key}
+            #headers = {**config["headers"], "x-api-key": api_key}
+            headers = {**config["headers"], "Authorization": "ApiKey {}".format(api_key)}
 
         else:
-            config["headers"] = {"x-api-key": api_key}
-
+            #config["headers"] = {"x-api-key": api_key}
+            config["headers"] = {"Authorization": "ApiKey {}".format(api_key)}
         config["headers"] = headers
 
     # Explicitly exclude SSL settings when not using SSL

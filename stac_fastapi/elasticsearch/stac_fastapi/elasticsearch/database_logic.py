@@ -50,6 +50,12 @@ DEFAULT_SORT = {
     "collection": {"order": "desc"},
 }
 
+COLLECTION_DEFAULT_SORT = {
+    # "datetime": {"order": "desc"},
+    "id": {"order": "desc"},
+    # "title": {"order": "desc"},
+}
+
 ES_ITEMS_SETTINGS = {
     "index": {
         "sort.field": list(DEFAULT_SORT.keys()),
@@ -470,13 +476,7 @@ class DatabaseLogic:
     def make_search(is_collection_search=False):
         """Database logic to create a Search instance."""
         if is_collection_search:
-            return CollectionSearch().sort(
-                *{
-                    "datetime": {"order": "desc"},
-                    "id": {"order": "desc"},
-                    "collection": {"order": "desc"},
-                }
-            )
+            return CollectionSearch().sort(*COLLECTION_DEFAULT_SORT)
         return Search().sort(*DEFAULT_SORT)
 
     @staticmethod
@@ -672,8 +672,10 @@ class DatabaseLogic:
 
         if is_collection_search := isinstance(search, CollectionSearch):
             index_param = f"{COLLECTIONS_INDEX}-000001"
+            default_sort = COLLECTION_DEFAULT_SORT
         else:
             index_param = indices(collection_ids)
+            default_sort = DEFAULT_SORT
 
         max_result_window = MAX_LIMIT
 
@@ -684,7 +686,7 @@ class DatabaseLogic:
                 index=index_param,
                 ignore_unavailable=ignore_unavailable,
                 query=query,
-                sort=sort or None,
+                sort=sort or default_sort,
                 search_after=search_after,
                 size=size_limit,
             )

@@ -70,7 +70,7 @@ class CollectionSearchPostExtension(CollectionSearchExtension):
         self.router.prefix = app.state.router_prefix
 
         self.router.add_api_route(
-            name="Collections searcb",
+            name="Collections search",
             path="/collections-search",
             methods=["POST"],
             response_model=(

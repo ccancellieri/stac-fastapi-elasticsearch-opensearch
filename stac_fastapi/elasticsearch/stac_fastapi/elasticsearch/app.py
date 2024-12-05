@@ -1,5 +1,6 @@
 """FastAPI application."""
 
+from fastapi import FastAPI
 import os
 
 from stac_fastapi.api.app import StacApi
@@ -88,6 +89,8 @@ database_logic.extensions = [type(ext).__name__ for ext in extensions]
 
 post_request_model = create_post_request_model(search_extensions)
 
+# settings.openapi_url = "/app" # Not so sure what it exactly does, we need to fix links/base_url in the responses
+
 api = StacApi(
     title=os.getenv("STAC_FASTAPI_TITLE", "stac-fastapi-elasticsearch"),
     description=os.getenv("STAC_FASTAPI_DESCRIPTION", "stac-fastapi-elasticsearch"),
@@ -114,13 +117,24 @@ async def _startup_event() -> None:
     await create_collection_index()
 
 
+main_app = FastAPI()
+
+
+@app.get("/app")
+def read_main():
+    return {"message": "Hello World from main app"}
+
+
+main_app.mount("/app", app)
+
+
 def run() -> None:
     """Run app from command line using uvicorn if available."""
     try:
         import uvicorn
 
         uvicorn.run(
-            "stac_fastapi.elasticsearch.app:app",
+            "stac_fastapi.elasticsearch.app:main_app",
             host=settings.app_host,
             port=settings.app_port,
             log_level="info",

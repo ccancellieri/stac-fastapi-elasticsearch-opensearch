@@ -1,5 +1,6 @@
 """FastAPI application."""
 
+from fastapi import APIRouter
 from fastapi import FastAPI
 import os
 
@@ -58,6 +59,9 @@ aggregation_extension.POST = EsAggregationExtensionPostRequest
 aggregation_extension.GET = EsAggregationExtensionGetRequest
 
 collection_client = AsyncCollectionSearchClient(database=database_logic)
+
+main_app_router = APIRouter(prefix='/app')
+
 search_extensions = [
     CollectionSearchPostExtension(
         POST=CollectionSearchPostRequest, client=collection_client, settings=settings
@@ -67,6 +71,7 @@ search_extensions = [
             database=database_logic, session=session, settings=settings
         ),
         settings=settings,
+        router=main_app_router
     ),
     BulkTransactionExtension(
         client=BulkTransactionsClient(
@@ -91,6 +96,8 @@ post_request_model = create_post_request_model(search_extensions)
 
 # settings.openapi_url = "/app" # Not so sure what it exactly does, we need to fix links/base_url in the responses
 
+#main_app = FastAPI(root_path="/app")
+
 api = StacApi(
     title=os.getenv("STAC_FASTAPI_TITLE", "stac-fastapi-elasticsearch"),
     description=os.getenv("STAC_FASTAPI_DESCRIPTION", "stac-fastapi-elasticsearch"),
@@ -103,6 +110,7 @@ api = StacApi(
     search_get_request_model=create_get_request_model(search_extensions),
     search_post_request_model=post_request_model,
     route_dependencies=get_route_dependencies(),
+    #app=main_app,
 )
 app = api.app
 app.root_path = os.getenv("STAC_FASTAPI_ROOT_PATH", "")
@@ -116,16 +124,12 @@ async def _startup_event() -> None:
     await create_index_templates()
     await create_collection_index()
 
-
-main_app = FastAPI()
-
-
-@app.get("/app")
-def read_main():
-    return {"message": "Hello World from main app"}
+# @app.get("/app")
+# def read_main():
+#     return {"message": "Hello World from main app"}
 
 
-main_app.mount("/app", app)
+#main_app.mount("/app", app)
 
 
 def run() -> None:
@@ -134,7 +138,8 @@ def run() -> None:
         import uvicorn
 
         uvicorn.run(
-            "stac_fastapi.elasticsearch.app:main_app",
+            #"stac_fastapi.elasticsearch.app:main_app",
+            "stac_fastapi.elasticsearch.app:app", 
             host=settings.app_host,
             port=settings.app_port,
             log_level="info",
@@ -145,6 +150,7 @@ def run() -> None:
 
 
 if __name__ == "__main__":
+    print("something")
     run()
 
 

@@ -48,4 +48,4 @@ RUN pip install --no-cache-dir ./stac_fastapi/elasticsearch[server,docs]
 
 EXPOSE $APP_PORT
 
-CMD ["uvicorn", "stac_fastapi.elasticsearch.app:main_app", "--host", "$APP_HOST", "--port", $APP_PORT]
+CMD ["uvicorn", "stac_fastapi.elasticsearch.app:app", "--host", "$APP_HOST", "--port", $APP_PORT]
